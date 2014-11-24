@@ -42,7 +42,7 @@ public class ChatroomServerHandler extends ServerHandler {
 	public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
 		message = "[" + ctx.channel().remoteAddress() + "] has left MAD Chat!";
 		for(Channel channel : channels) {
-			channel.writeAndFlush("[SERVER] : [" + ctx.channel().remoteAddress() + "] has left MAD Chat!\t" + getUsers() + "\r\n");
+			channel.writeAndFlush("[SERVER] : [" + ctx.channel().remoteAddress() + "] has left MAD Chat!\r\n");
 		}
 		channels.remove(ctx.channel());
 	}
@@ -55,15 +55,38 @@ public class ChatroomServerHandler extends ServerHandler {
 	 */
 	@Override
 	public void channelRead0(ChannelHandlerContext ctx, String message) throws Exception {
-		this.message = "[" + ctx.channel().remoteAddress() + "] : " + message;
-		for(Channel c: channels) {
-			if(c != ctx.channel()) {
-				c.writeAndFlush("[" + ctx.channel().remoteAddress() + "] : " + message + "\r\n");
-	 		} else {
-	 			c.writeAndFlush("[you] : " + message + "\r\n");
-	 		}
-	 	}
-		
+		System.out.println("channelRead0 (before):: " + message);
+		if(message.equals("")) {
+			System.out.println("Error: Wrote empty string. " + ctx.channel());
+		} else {
+			if(!message.startsWith("[P2P]")) {
+				System.out.println("channelRead0 (not P2P):: true");
+				this.message = "[" + ctx.channel().remoteAddress() + "] : " + message;
+				for(Channel c: channels) {
+					if(c != ctx.channel()) {
+						c.writeAndFlush("[" + ctx.channel().remoteAddress() + "] : " + message + "\r\n");
+			 		} else {
+			 			c.writeAndFlush("[you] : " + message + "\r\n");
+			 		}
+			 	}
+			} else {
+				int startFrom = message.indexOf("FROM : [") + 8;
+				int endFrom = message.indexOf(']', startFrom);
+				String userFrom = message.substring(startFrom, endFrom);
+				int startTo = message.indexOf("TO : [") + 6;
+				int endTo = message.indexOf(']', startTo);
+				String userTo = message.substring(startTo, endTo);
+				String msg = message.substring(endTo+1);
+				this.message = message;
+				for(Channel c: channels) {
+					if(c.remoteAddress().toString().equals(userTo)) {
+						System.out.println("channelRead0 (P2P):: " + "[P2P] [" + ctx.channel().remoteAddress() + "] : " + msg + "\r\n");
+						c.writeAndFlush("[P2P] FROM: [" + userFrom + "] TO : [" + userTo + "] : " + msg + "\r\n");
+					}
+				}
+			}
+		}
+		System.out.println("channelRead0 (end):: " + message);
 	}
 
 	/**
