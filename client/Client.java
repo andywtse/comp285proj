@@ -70,4 +70,13 @@ public abstract class Client {
 		return host;
 	}
 	
+	/**
+	 * Generic method to get the output text area.
+	 * @return output
+	 * @author Mike
+	 */
+	public JTextArea getOutput() {
+		return output;
+	}
+	
 }
